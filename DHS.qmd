@@ -1,0 +1,50 @@
+---
+title: "DHS Survey data"
+format: html
+editor: visual
+---
+
+## Read Data
+
+```{r}
+
+data <- read.csv("~/Desktop/Class/2026 Spring/Computational Social Science/CSS LABS/idhs_00002.csv")
+
+```
+
+## How many rows? Columns?
+
+```{r}
+nrow(data)
+ncol(data)
+```
+
+## Visualize
+
+```{r}
+# Histogram of age
+hist(data$AGE)
+
+data %>% ggplot(aes(x=AGE))+ geom_histogram(bindidth = 1, color ="grey", fill = "pink")
+
+#Relationship between age and ideal family size(IDEALKID;top-coded at 50)
+library(ggplot2)
+library(tidyverse)
+
+library(dplyr)
+
+#step1
+deal_kid_by_age <- data %>% 
+  filter(IDEALKID < 50) %>% 
+  group_by(AGE) %>% 
+  summarize(ideal_children_avg = mean(IDEALKID))
+
+#step2
+deal_kid_by_age %>% 
+  ggplot(aes(x=AGE , y=ideal_children_avg)) +
+  geom_point() +
+  geom_line(size=1)+
+  cowplot::theme_cowplot() +
+labs(x="AGE", y ="Ideal Children")
+  
+```

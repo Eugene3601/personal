@@ -1,0 +1,81 @@
+---
+title: "0226 CSS CLASS"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(here)
+
+#source a custom function from github
+source("https://raw.githubusercontent.com/caseybreen/censocdev")
+
+```
+
+## read in files
+
+```{r}
+#absolute 
+censoc <- read_csv()
+#new way 
+censoc <- read_csv(here("data","name of file"))
+```
+
+## Five most common Plots
+
+```{r}
+#Plot 1 - Histogram
+
+histogram <- censoc %>% 
+  ggplot(aes(x = death_age)) + 
+  geom_histogram(fill = "grey", color"black") +
+  theme_cowplot() +
+  labs(x="Death Age", Y="Count")
+
+histogram 
+
+#plot 2 - Scatterplot 
+scatterplot <- censoc %>% 
+  sample_n(1000) %>%  # 이거 안하면 너무 빽빽하게 보일수도 
+  ggplot(aes(x = death_age)) + 
+  geom_point() +
+  theme_cowplot() +
+  geom_smooth() + #scatterplot 연관성을 선으로 나타냄
+  labs(x="Serial", Y="Death Age")
+
+
+#Plot 3 - Bar Plot 
+column_plot_df <- censoc %>% 
+  count(socstate_string) %>% 
+  arrange(des(n)) %>% #order of social security states
+  top_n(10) #n 수 지정
+
+column_plot_df %>% 
+  ggplot(aes(x=socstate_string, y =n)) +
+  geom_col(fill= "darkred", alpha =0.7) +
+  theme_cowplot() +
+  labs(x="state", y ="count") +
+  theme(axis.text.x= element_text(angle=-45, vjust=0.5, hjust=0))
+
+
+#Plot 4 - dot plot
+#prep data
+column_plot_df <- censoc %>% 
+  filter(socstate_string %in% column_plot_df$socstate_string) %>% 
+  group_by(socstate_string) %>% 
+  summarize(life_exp = mean(deat_age),
+            life_exp_se = sd(death_age) / squrt(n() -1))
+
+#plot
+dot_plot_df %>% 
+  ggplot(aes(y= reorder(socstate_string, -life_exp),
+             x = life_exp, 
+             xmin = life_exp - 1.96 * life_exp_se, 
+             xmax = life_exp + 1.96 * life_exp_se)) +
+  geom_pointrange() +
+  
+  
+  
+```

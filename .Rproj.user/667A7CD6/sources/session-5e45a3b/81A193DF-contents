@@ -1,0 +1,139 @@
+---
+title: "Education and longevity: Advantage for Immigrants?"
+author: Casey Breen
+---
+
+First, we'll library some packages
+
+```{r}
+## library packages 
+library(tidyverse)
+library(cowplot)
+library(broom)
+```
+
+Now we'll read in data. This dataset links 1940 Census to DMF. It only contains men dying between 1975 and 2005. All covariates are observed in early life (1940).
+
+```{r}
+## update this path 
+censoc <- read_csv('/Users/eugene/Desktop/censoc_dmf_v2_1_linked_with_census.csv')
+```
+
+First we'll restrict to conservative matches which are higher quality. We'll also restrict to people born around the same time of 1905-1915.
+
+```{r}
+## restrict to conservative 
+censoc <- censoc %>% 
+  filter(link_abe_exact_conservative == 1)
+
+## restrict to certain birth years
+censoc <- censoc %>% 
+  filter(byear %in% 1900:1920)
+```
+
+Then we'll need to recode education. The IPUMS codes don't directly map onto years of education.
+
+```{r}
+## function for recoding education
+recode_education <- function(df, educ_var) {
+  
+  df <- df  %>%
+    mutate(educ_variable = !!sym(educ_var)) %>%
+    mutate(educ_yrs = case_when(
+      educ_variable == 2 ~ 0,
+      educ_variable == 12 ~ 0,
+      educ_variable == 14 ~ 1,
+      educ_variable == 15 ~ 2,
+      educ_variable == 16 ~ 3,
+      educ_variable == 17 ~ 4,
+      educ_variable == 22 ~ 5,
+      educ_variable == 23 ~ 6,
+      educ_variable == 25 ~ 7,
+      educ_variable == 26 ~ 8,
+      educ_variable == 30 ~ 9,
+      educ_variable == 40 ~ 10,
+      educ_variable == 50 ~ 11,
+      educ_variable == 60 ~ 12,
+      educ_variable == 70 ~ 13,
+      educ_variable == 80 ~ 14,
+      educ_variable == 90 ~ 15,
+      educ_variable == 100 ~ 16,
+      educ_variable == 110 ~ 17,
+      educ_variable == 111 ~ 17,
+      educ_variable == 112 ~ 17,
+      educ_variable == 113 ~ 17
+    )) %>%
+    select(-educ_variable)
+  
+  return(df)
+  
+}
+```
+
+Now apply function and we will have an `educ_yrs` variable
+
+```{r}
+censoc <- censoc %>% 
+  recode_education(educ_var = "educ")
+```
+
+Now we'll need to look at the birthplace codes: <https://usa.ipums.org/usa-action/variables/bpl#codes_section>
+
+```{r}
+censoc %>% 
+  filter(bpl > 15000) %>% ## foreign codes start at 15000
+  count(bpl) %>% 
+  arrange(desc(n)) 
+```
+
+```{r}
+## first look at education in overall sample 
+lm(death_age ~ educ_yrs + as.factor(byear), data = censoc)
+```
+
+OK, so each additional year of education associated with 0.2 years of life. Let's also check for non-linearity just for fun (education staircase)
+
+```{r}
+## set ref 
+censoc$educ_yrs <- relevel(as.factor(censoc$educ_yrs), ref = "1")
+model <- lm(death_age ~ as.factor(educ_yrs) + as.factor(byear), data = censoc)
+
+## tidy up model 
+data_forplot <- broom::tidy(model) %>%  
+  filter(grepl("^as\\.factor\\(educ_yrs\\)", term)) %>% 
+  mutate(
+    educ_yrs = as.integer(sub("^as\\.factor\\(educ_yrs\\)", "", term)),
+    ci_low = estimate - 1.96 * std.error,
+    ci_high = estimate + 1.96 * std.error
+  ) %>% 
+  arrange(educ_yrs)
+
+ggplot(data_forplot, aes(x = educ_yrs, y = estimate)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_pointrange(aes(ymin = ci_low, ymax = ci_high)) +
+  labs(
+    x = "Years of education",
+    y = "Mortality advantage (years)") + 
+  theme_cowplot()
+```
+
+Now let's look at this for a bunch of other countries — gradients vary!
+
+```{r}
+## for italy
+lm(death_age ~ educ_yrs + as.factor(byear), data = censoc %>% filter(bpl == "43400"))
+
+## for China
+lm(death_age ~ educ_yrs + as.factor(byear), data = censoc %>% filter(bpl == "50000"))
+
+## for Canada (English speaking)
+lm(death_age ~ educ_yrs + as.factor(byear), data = censoc %>% filter(bpl == "15010"))
+
+## for Mexico — ## extremely small longevity gradient 
+lm(death_age ~ educ_yrs + as.factor(byear), data = censoc %>% filter(bpl == "20000")) 
+```
+
+```{r}
+
+table(censoc$race)
+```

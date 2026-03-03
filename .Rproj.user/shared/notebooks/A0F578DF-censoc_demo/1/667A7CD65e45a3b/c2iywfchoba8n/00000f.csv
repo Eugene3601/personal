@@ -1,0 +1,7 @@
+"0","## restrict to conservative "
+"0","censoc <- censoc %>% "
+"0","  filter(link_abe_exact_conservative == 1)"
+"0",""
+"0","## restrict to certain birth years"
+"0","censoc <- censoc %>% "
+"0","  filter(byear %in% 1900:1920)"

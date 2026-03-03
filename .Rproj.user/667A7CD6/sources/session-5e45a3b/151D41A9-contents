@@ -1,0 +1,313 @@
+---
+title: "Assignment2_Eugene"
+format: pdf
+editor: visual
+execute:
+  warning: false
+  message: false
+  echo: true
+---
+
+## Read Data
+
+```{r}
+library(haven)
+data <- read_dta("/Users/eugene/Desktop/Class/2026 Spring/Longitudinal Analysis/rcode_assignments/RiesbyWide.dta")
+```
+
+## 1. Set-up:
+
+\(a\) Convert these data from the individual-level format to the “person-period” format (i.e.,from wide to long).
+
+```{r}
+#1. 
+head(data)
+
+library(tidyverse)
+
+data_long <- data %>%
+  pivot_longer(
+    cols = HamD0:HamD5,
+    names_to = "time",
+    values_to = "HamD"
+  ) %>%
+  mutate(
+    time = as.numeric(gsub("HamD", "", time))
+  ) %>%
+  arrange(id, time)
+
+head(data_long)
+```
+
+\(b\) Carry out a basic exploratory analysis by graphing the raw trajectories for each subject (or randomly selected subjects) along with the linear fit through each individual’s measurements in side-by-side plots (e.g., spaghetti plots).
+
+```{r}
+#2.
+library(ggplot2)
+
+ggplot(data_long, aes(x = time, y = HamD, group = id)) +
+  geom_line(alpha = 0.3) +
+  geom_smooth(method = "lm",
+              se = FALSE,
+              aes(group = id),
+              color = "orange") +
+  labs(title = "Individual Trajectories with Linear Fits",
+       x = "Time",
+       y = "HamD Score") +
+  theme_minimal()
+```
+
+\(c\) Comment on whether a linear growth curve model would seem appropriate given the observed and fitted patterns.
+
+-   Answer: Based on the spaghetti plot, a linear growth curve model seems to be appropriate, since overall pattern is captured by a linear line.
+
+\(d\) Also do this for groups defined by Endog=0 and Endog=1 and discus any noteworthy observed differences between groups.
+
+```{r}
+ggplot(data_long, aes(x = time, y = HamD, group = id)) +
+  geom_line(alpha = 0.3) +
+  geom_smooth(method = "lm",
+              se = FALSE,
+              aes(group = id),
+              color = "purple",
+              alpha = 0.3) +
+  facet_wrap(~ Endog) +
+  labs(title = "Individual Trajectories by Endog",
+       x = "Time",
+       y = "HamD Score") +
+  theme_minimal()
+```
+
+-   According to the plots, groups classified as Endog=1 seems to have a higher initial depression scores compared to Endog=0 group. Moreover, while the scores for both groups decline over time, some slopes in the endogenous group appears to be slightly steeper. These differences shows that Endog may serve as a potential predictor.
+
+## 2. Preliminary Models and Comparison:
+
+\(a\) Fit an OLS model to these data.
+
+```{r}
+ols_model<- lm(HamD ~ 1, data = data_long)
+
+summary(ols_model)
+```
+
+(b) Fit an unconditional means model to these data.
+
+```{r}
+
+library(lme4)
+means_model <- lmer(HamD ~ 1 + (1 | id), data = data_long,REML = FALSE)
+
+summary(means_model)
+
+```
+
+\(c\) Use a likelihood ratio test to assess whether this model is an improvement over a simple regression model and why? (i.e., Compare the following models). yij= β0 + εij and yij= β0i + εij ≡ β0 + U0i + εij
+
+```{r}
+ols_glm <- glm(HamD ~ 1,
+              data = data_long)
+
+means_model<- lmer(HamD ~ 1 + (1 | id),
+                       data = data_long,
+                       REML = FALSE)
+
+anova(means_model,ols_model)
+
+```
+
+\(d\) Interpret the variance components from the unconditional means model.
+
+-   Answer: The unconditional means model decomposes the total variance into two components, which is between-subject variance and within-subject variance. A likelihood ratio test was conducted to compare two models. The test compares the log-likelihoods of the two models to determine whether including a random intercept significantly improves model fit.
+
+-   The results show a chi-square value of 34.72 with a highly significant p-value. This indicates that the between-subject variance component is significantly different from zero. Therefore, the multilevel model provides a better fit than the OLS model.
+
+\(e\) What proportion of the total variance is attributable to subject-specific variation in the outcome?
+
+-   To calculate the proportion of the subject-specific variation out of the total variance, we have to calculate the ICC, which is calculated as 14.58 / (14.58 + 36.79)= approximately 0.28. This indicates that about 28% of the total variance is attributable to differences in between subjects.
+
+## 3. Unconditional Growth Models:
+
+\(a\) Fit an unconditional growth model to these data using a full specification for the variance components (i.e., a model that estimates the variances of the random slope and intercept as well as their covariance). Interpret fixed effects and variance components from this model.
+
+-   According to the unconditional growth model, the value of the fixed intercept is 23.369, indicating the average baseline score of HamD. The value of the fixed time(slope) is -2.33, indicating that HamD scores decrease decrease by approximately 2.33 points per week on average.
+
+-   The value of the random intercept variance is 12.05, and the value of the random slope variance is 1.72 indicating that there is a variance in both the baseline and slope when taking time into consideration.
+
+-   The negative correlation shows that individuals with higher baseline score improve faster.
+
+```{r}
+full_model <- lmer(HamD ~ time + (1 + time | id),
+                  data = data_long,
+                  REML = FALSE)
+
+summary(full_model)
+```
+
+\(b\) Use a likelihood ratio test to determine if this model offers an improvement over the unconditional means model.
+
+-   The value of the Chi-square is 216.563 with strong statistical significance. This offers an improvement of the model which includes time.
+
+```{r}
+anova(means_model, full_model)
+```
+
+\(c\) Test whether a more parsimonious unconditional growth model fits these data as well as the previous model using a likelihood ratio test. Retain the preferred model as the “working” model. Interpret the fixed effects and variance components from your working unconditional growth model.
+
+-   In the full specification model, we had 3 variance components. In the parsimonious model, we get rid of the covariance and test if including the covariance is needed.
+
+-   Since the chi-square is not statistically significant, it seems that it is no use including the covariance is not need. Moreover, the parsimonious model have the lower value of AIC which is better.
+
+-   Overall, I would choose the parsimonious model as the working model.
+
+```{r}
+parsimonious_model <- lmer(HamD ~ time +
+                      (1 | id) +
+                      (0 + time | id),
+                      data = data_long,
+                      REML = FALSE)
+
+anova(full_model, parsimonious_model)
+```
+
+## 4. Further Analysis: Under the assumptions of normality of the MLEs (i.e., asymptotic normality), we can determine some aspects of the distribution of random intercepts and slopes in the depressed population.
+
+(a) Using the slope fixed effect and the estimated variance (or std. deviation) of the random slope as a gauge of variability of the individual slopes around the fixed effect, about what proportion of the random slopes in the depressed population would you expect to be greater than 0? (i.e., estimate Pr(β1 \> 0))
+
+-   According to the parsimonious model, the average of the population slope(fixed effect) is -2.33 with the value of 1.24 standard deviation(random effect), under the assumptions of normality. The proportion of slopes greater than 0 indicates the percentage of individuals whose scores are expected to increase over time.
+
+-   The value of z-score is 0-(-2.33)/1.244=1.87, and the probability is 0.003. Thus, approximately 3% of of the random slopes in the depressed population is expected to be greater than 0.
+
+```{r}
+parsimonious_model <- lmer(HamD ~ time +
+                      (1 | id) +
+                      (0 + time | id),
+                      data = data_long,
+                      REML = FALSE)
+summary(parsimonious_model)
+
+1-pnorm(1.87)
+```
+
+\(b\) Using the intercept fixed effect and the estimated variance (std. deviation) of the random intercept as gauge of variation in initial depression levels, about what proportion of the random intercepts in the depressed population would be expected be less than 20? (i.e.,estimate Pr(β0 \< 20).
+
+-   Following the same logic, the value of the z-score is 20-23.37/3.27=-1.03. Thus, approximately 15% of individuals in the depressed population are expected to have initial depression scores below 20.
+
+```{r}
+pnorm(-1.03)
+```
+
+## 5. Prediction:
+
+\(a\) Obtain estimates of the random slope by predicting the random effect U1i for each subject and adding these to the fixed effect β1.
+
+```{r}
+# fixed slope
+b1 <- fixef(parsimonious_model)["time"]
+
+# random effects
+r <- ranef(parsimonious_model)
+
+U1 <- r$id$time
+
+# combine
+b1_EB <- b1 + U1
+
+# data frame
+slope_estimates <- data.frame(
+  id = rownames(r$id),
+  random_effect = U1,
+  individual_slope = b1_EB)
+
+head(slope_estimates)
+
+
+```
+
+\(b\) Obtain estimates of the random intercept by predicting the random effect U0i for each subject and adding these to the fixed effect β0.
+
+```{r}
+# fixed intercept
+b0 <- fixef(parsimonious_model)["(Intercept)"]
+
+# random effects
+r <- ranef(parsimonious_model)
+
+U0 <- r$id$`(Intercept)`
+
+# combine
+b0_EB <- b0 + U0
+
+# data frame
+intercept_estimates <- data.frame(
+  id = rownames(r$id),
+  random_effect = U0,
+  individual_intercept = b0_EB)
+
+head(intercept_estimates)
+
+```
+
+\(c\) Provide histograms/boxplots/other visual display of the random slopes and intercepts.
+
+```{r}
+#merTools 
+ 
+library(merTools)
+
+re_sim <- REsim(parsimonious_model)
+plotREsim(re_sim)
+
+
+#Histogram
+
+library(ggplot2)
+
+ggplot(slope_estimates, aes(x = individual_slope)) +
+  geom_histogram(bins = 12, fill = "skyblue", color = "black") +
+  geom_vline(xintercept = fixef(parsimonious_model)["time"],
+             linetype = "dashed", color = "red") +
+  labs(title = "Histogram of Individual Slopes",
+       x = "Estimated Individual Slope",
+       y = "Frequency") +
+  theme_minimal()
+
+ggplot(intercept_estimates, aes(x = individual_intercept)) +
+  geom_histogram(bins = 12, fill = "lightgreen", color = "black") +
+  geom_vline(xintercept = fixef(parsimonious_model)["(Intercept)"],
+             linetype = "dashed", color = "red") +
+  labs(title = "Histogram of Individual Intercepts",
+       x = "Estimated Individual Intercept",
+       y = "Frequency") +
+  theme_minimal()
+
+```
+
+## 6. Conditional Growth Model:
+
+\(a\) Using your preferred model from Question 4, assess whether there is evidence that the “endogenous depression” classification is able to statistically differentiate between depression patients’ initial levels of depression.
+
+-   The fixed effect results for model including Endog seems statistically significant(t=2.107) and positive. This indicates that endogenous patients show approximately 2.36 points higher depression scores compared with non-endogenous patients.
+
+```{r}
+conditional_model <- lmer(HamD ~ time + Endog +
+                          (1 | id) +
+                          (0 + time | id),
+                          data = data_long,
+                          REML = FALSE)
+
+summary(conditional_model)
+```
+
+(b) Also assess whether there is evidence that this classification moderates the change in depression scores over time.
+
+-   When adding interaction with time in the model, it seems that the interaction between time and Endog is not statistically significant(t=-0.51). This indicates that the endogenous state does not moderate the slope in depression scores over time.
+
+```{r}
+interaction_model <- lmer(HamD ~ time * Endog +
+                          (1 | id) +
+                          (0 + time | id),
+                          data = data_long,
+                          REML = FALSE)
+
+summary(interaction_model)
+```

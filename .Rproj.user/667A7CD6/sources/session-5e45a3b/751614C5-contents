@@ -1,0 +1,10 @@
+
+
+library(arrow)
+
+
+data <- read_csv("/Users/eugene/Downloads/censoc_dmf_v2_1_linked_with_census.csv")
+
+
+
+grep("educ", names(data), value = TRUE, ignore.case = TRUE)
