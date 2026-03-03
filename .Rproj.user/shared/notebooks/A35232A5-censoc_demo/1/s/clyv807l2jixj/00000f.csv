@@ -1,0 +1,7 @@
+"0","## update this path "
+"0","censoc <- read_csv('/Users/cb48679/Library/CloudStorage/GoogleDrive-caseyfbreen@gmail.com/My Drive/censoc_dmf_linked/censoc_dmf_v2_1_linked_with_census.csv')"
+"1","[1m[33mError[39m:[22m
+[38;5;232m[33m![38;5;232m ]8;;file:///Users/cb48679/Library/CloudStorage/GoogleDrive-caseyfbreen@gmail.com/My Drive/censoc_dmf_linked/censoc_dmf_v2_1_linked_with_census.csv[34m/Users/cb48679/Library/CloudStorage/GoogleDrive-caseyfbreen@gmail.com/My[38;5;232m]8;;
+  ]8;;file:///Users/cb48679/Library/CloudStorage/GoogleDrive-caseyfbreen@gmail.com/My Drive/censoc_dmf_linked/censoc_dmf_v2_1_linked_with_census.csv[34mDrive/censoc_dmf_linked/censoc_dmf_v2_1_linked_with_census.csv[38;5;232m]8;; does not exist.[39m
+[90mRun `]8;;x-r-run:rlang::last_trace()rlang::last_trace()]8;;` to see where the error occurred.[39m
+"

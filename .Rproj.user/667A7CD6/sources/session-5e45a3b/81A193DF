@@ -1,9 +1,9 @@
 {
     "id": "81A193DF",
-    "path": "~/Desktop/censoc_demo.Rmd",
+    "path": "~/Desktop/Class/2026 Spring/Computational Social Science/censoc_demo.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "1894707130",
     "contents": "",
     "dirty": true,
     "created": 1772487837185.0,
@@ -12,20 +12,20 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "135,0",
+        "cursorPosition": "196,0",
         "scrollLine": "121",
         "rmdVisualMode": "true",
         "rmdVisualWrapConfigured": "true",
         "docOutlineVisible": "1",
-        "rmdVisualModeLocation": "3750:3065.5556640625",
+        "rmdVisualModeLocation": "5300:5790",
         "rmdVisualCollapsedChunks": ""
     },
     "folds": "",
-    "lastKnownWriteTime": 1770833969,
+    "lastKnownWriteTime": 1772548338,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1772510366020,
+    "last_content_update": 1772550256328,
     "read_only": false,
     "read_only_alternatives": []
 }
